@@ -25,10 +25,25 @@ def all_availability():
     req = rest_utils.RESTContext(request)
     if req.method == "GET":
         res = AvailabilityResource.get_by_template({})
-        rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
+        if len(res):
+            status_code = 200
+        else:
+            res = 'Resource not found!'
+            status_code = 404
+        rsp = Response(json.dumps(res, default=str), status=status_code, content_type="application/json")
     else:
-        AvailabilityResource.create(req.data)
-        rsp = Response("CREATED", status=201, content_type="text/plain")
+        if req.data:
+            try:
+                AvailabilityResource.create(req.data)
+                status_code = 201
+                res = "Created"
+            except Exception as e:
+                res = 'Database error: {}'.format(str(e))
+                status_code = 422
+        else:
+            res = 'New profile cannot be empty!'
+            status_code = 400
+        rsp = Response(res, status=status_code, content_type="text/plain")
     return rsp
 
 
@@ -37,10 +52,25 @@ def all_time_slot():
     req = rest_utils.RESTContext(request)
     if req.method == "GET":
         res = TimeSlotResource.get_by_template({})
-        rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
+        if len(res):
+            status_code = 200
+        else:
+            res = 'Resource not found!'
+            status_code = 404
+        rsp = Response(json.dumps(res, default=str), status=status_code, content_type="application/json")
     else:
-        TimeSlotResource.create(req.data)
-        rsp = Response("CREATED", status=201, content_type="text/plain")
+        if req.data:
+            try:
+                TimeSlotResource.create(req.data)
+                status_code = 201
+                res = "Created"
+            except Exception as e:
+                res = 'Database error: {}'.format(str(e))
+                status_code = 422
+        else:
+            res = 'New profile cannot be empty!'
+            status_code = 400
+        rsp = Response(res, status=status_code, content_type="text/plain")
     return rsp
 
 
@@ -49,13 +79,25 @@ def availability_id(aid):
     req = rest_utils.RESTContext(request)
     if req.method == "GET":
         res = AvailabilityResource.get_by_template({"Id": aid})
-        rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
+        if len(res):
+            status_code = 200
+        else:
+            res = 'Resource not found!'
+            status_code = 404
+        rsp = Response(json.dumps(res, default=str), status=status_code, content_type="application/json")
     elif req.method == "PUT":
-        AvailabilityResource.update(req.data, aid)
-        rsp = Response("UPDATED", status=200, content_type="text/plain")
+        if req.data:
+            AvailabilityResource.update(req.data, aid)
+            status_code = 200
+            res = "Updated"
+        else:
+            res = 'New availability cannot be empty!'
+            status_code = 400
+        rsp = Response(res, status=status_code, content_type="text/plain")
     else:
         AvailabilityResource.delete_by_template({"Id": aid})
-        rsp = Response("DELETED", status=200, content_type="text/plain")
+        status_code = 204
+        rsp = Response("DELETED", status=status_code, content_type="text/plain")
     return rsp
 
 
@@ -64,13 +106,25 @@ def time_slot_id(tid):
     req = rest_utils.RESTContext(request)
     if req.method == "GET":
         res = TimeSlotResource.get_by_template({"Id": tid})
-        rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
+        if len(res):
+            status_code = 200
+        else:
+            res = 'Resource not found!'
+            status_code = 404
+        rsp = Response(json.dumps(res, default=str), status=status_code, content_type="application/json")
     elif req.method == "PUT":
-        TimeSlotResource.update(req.data, tid)
-        rsp = Response("UPDATED", status=200, content_type="text/plain")
+        if req.data:
+            TimeSlotResource.update(req.data, tid)
+            status_code = 200
+            res = "Updated"
+        else:
+            res = 'New timeslot cannot be empty!'
+            status_code = 400
+        rsp = Response(res, status=status_code, content_type="text/plain")
     else:
         TimeSlotResource.delete_by_template({"Id": tid})
-        rsp = Response("DELETED", status=200, content_type="text/plain")
+        status_code = 204
+        rsp = Response("DELETED", status=status_code, content_type="text/plain")
     return rsp
 
 
