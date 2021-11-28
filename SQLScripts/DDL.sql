@@ -1,3 +1,7 @@
+drop schema if exists schedule;
+create schema schedule;
+use schedule;
+
 create table if not exists schedule.timeSlot
 (
 	Id int not null
