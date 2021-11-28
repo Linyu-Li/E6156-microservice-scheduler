@@ -134,5 +134,17 @@ def time_slot_id(tid):
     return rsp
 
 
+@application.route('/avail/<aid>', methods=['PUT'])
+def edit_avail_time_slot(aid):
+    if request.method != 'PUT':
+        return Response("Wrong method", status=405, content_type="text/plain")
+    res = AvailabilityResource.get_by_template({"Id": aid})
+    if res:
+        tid = res[0]['Id']
+        TimeSlotResource.update(request.get_json(), tid)
+        return Response("UPDATED", status=200, content_type="text/plain")
+    return Response(f"Availability {aid} not found!", status=404, content_type="text/plain")
+
+
 if __name__ == '__main__':
-    application.run()
+    application.run(port=5003)
