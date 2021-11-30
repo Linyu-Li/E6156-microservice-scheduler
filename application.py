@@ -33,36 +33,35 @@ blueprint = make_google_blueprint(
 application.register_blueprint(blueprint, url_prefix="/login")
 google_blueprint = application.blueprints.get("google")
 
-
-@application.before_request
-def before_request():
-    print("checking before request")
-    result_pass = security.check_path(request, google, google_blueprint)
-    if not result_pass:
-        return redirect(url_for('google.login'))
+# @application.before_request
+# def before_request():
+#     print("checking before request")
+#     result_pass = security.check_path(request, google, google_blueprint)
+#     if not result_pass:
+#         return redirect(url_for('google.login'))
 
 
 trigger_SNS = {"path": "/timeSlot", "method": "GET"}
 
 
-@application.after_request
-def after_request(response):
-    print("checking after request")
-    if request.path == trigger_SNS["path"] and request.method==trigger_SNS["method"]:
-        sns = notification.NotificationMiddlewareHandler.get_sns_client()
-        print("Got SNS Client!")
-        tps = notification.NotificationMiddlewareHandler.get_sns_topics()
-        print("SNS Topics = \n", json.dumps(tps, indent=2))
-
-        message = {"test": "event created"}
-        notification.NotificationMiddlewareHandler.send_sns_message(
-        #     #"arn:aws:sns:us-east-1:971820320916:6156project",
-
-        "arn:aws:sns:us-east-1:697047102781:new-user-topic",
-
-        message
-        )
-    return response
+# @application.after_request
+# def after_request(response):
+#     print("checking after request")
+#     if request.path == trigger_SNS["path"] and request.method==trigger_SNS["method"]:
+#         sns = notification.NotificationMiddlewareHandler.get_sns_client()
+#         print("Got SNS Client!")
+#         tps = notification.NotificationMiddlewareHandler.get_sns_topics()
+#         print("SNS Topics = \n", json.dumps(tps, indent=2))
+#
+#         message = {"test": "event created"}
+#         notification.NotificationMiddlewareHandler.send_sns_message(
+#         #     #"arn:aws:sns:us-east-1:971820320916:6156project",
+#
+#         "arn:aws:sns:us-east-1:697047102781:new-user-topic",
+#
+#         message
+#         )
+#     return response
 
 
 @application.route('/')
@@ -85,52 +84,101 @@ def all_availability():
     req = rest_utils.RESTContext(request)
     if req.method == "GET":
         res = AvailabilityResource.get_by_template({})
-        if len(res):
-            status_code = 200
-        else:
-            res = 'Resource not found!'
-            status_code = 404
-        rsp = Response(json.dumps(res, default=str), status=status_code, content_type="application/json")
+        rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
     else:
-        if req.data:
-            try:
-                AvailabilityResource.create(req.data)
-                status_code = 201
-                res = "Created"
-            except Exception as e:
-                res = 'Database error: {}'.format(str(e))
-                status_code = 422
-        else:
-            res = 'New profile cannot be empty!'
-            status_code = 400
-        rsp = Response(f"{status_code} - {res}", status=status_code, content_type="text/plain")
+        AvailabilityResource.create(req.data)
+        rsp = Response("CREATED", status=201, content_type="text/plain")
     return rsp
 
 
+# modified the POST method. If a post request to add a new timeSlot is received, first need to check if it
+# exits in the database.
 @application.route('/timeSlot', methods=['GET', 'POST'])
 def all_time_slot():
     req = rest_utils.RESTContext(request)
+    temp = req.data
     if req.method == "GET":
         res = TimeSlotResource.get_by_template({})
-        if len(res):
-            status_code = 200
-        else:
-            res = 'Resource not found!'
-            status_code = 404
-        rsp = Response(json.dumps(res, default=str), status=status_code, content_type="application/json")
+        rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
     else:
-        if req.data:
-            try:
-                TimeSlotResource.create(req.data)
-                status_code = 201
-                res = "Created"
-            except Exception as e:
-                res = 'Database error: {}'.format(str(e))
-                status_code = 422
-        else:
-            res = 'New profile cannot be empty!'
-            status_code = 400
-        rsp = Response(f"{status_code} - {res}", status=status_code, content_type="text/plain")
+        res = TimeSlotResource.get_by_template(req.data)
+        if not res:
+            TimeSlotResource.create(req.data)
+        rsp = Response("CREATED", status=201, content_type="text/plain")
+    return rsp
+
+# add a new path
+# GET: display all available time slots for certain user
+# POST: add a new timeSlot for the certain user
+@application.route('/availability/users/<uid>', methods=['GET', 'POST'])
+def availability_users(uid):
+    req = rest_utils.RESTContext(request)
+    if req.method == "GET":
+        res = AvailabilityResource.get_by_template({"userId": uid})
+        if res:
+            temp = []
+            for r in res:
+                tid = r["timeId"]
+                timeSlot = TimeSlotResource.get_by_template({"Id": tid})
+                if timeSlot:
+                    temp = temp + timeSlot
+            res = temp
+        rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
+    elif req.method == "POST":
+        res = TimeSlotResource.get_by_template(req.data)
+        if not res:
+            TimeSlotResource.create(req.data)
+        time = TimeSlotResource.get_by_template(req.data)
+        timeId = time[0]["Id"]
+
+        AvailabilityResource.create({
+            "userId": uid,
+            "timeId": timeId
+        })
+        rsp = Response("CREATED", status=201, content_type="text/plain")
+    # else:
+    #     AvailabilityResource.delete_by_template({"Id": aid})
+    #     rsp = Response("DELETED", status=200, content_type="text/plain")
+    return rsp
+
+
+# add a new path
+# PUT: If a user want to update a time slot, first check if the updated time slot is in the timeSlot table.
+#      If not, add the new time slot into timeSlot table.
+#      If exists, associate the time slot with the user.
+# DELETE: delete (the userID, timeID) pair in the Availability table. Do not delete the time slot in the TimeSlot table
+#         because other users might be associated with this time slot.
+@application.route('/availability/users/<uid>/<tid>', methods=['PUT', 'DELETE'])
+def availability_users_one(uid, tid):
+    req = rest_utils.RESTContext(request)
+    if req.method == "PUT":
+        AvailabilityResource.delete_by_template({"userId": uid, "timeId": tid})
+        temp = req.data
+
+        res = TimeSlotResource.get_by_template(req.data)
+        if not res:
+            TimeSlotResource.create(req.data)
+        time = TimeSlotResource.get_by_template(req.data)
+        timeId = time[0]["Id"]
+
+        AvailabilityResource.create({
+            "userId": uid,
+            "timeId": timeId
+        })
+        rsp = Response("UPDATED", status=200, content_type="application/json")
+    elif req.method == "DELETE":
+        AvailabilityResource.delete_by_template({"userId": uid, "timeId": tid})
+        rsp = Response("DELETED", status=200, content_type="text/plain")
+    return rsp
+
+# add a new path
+# display all users for a certain time slot
+@application.route('/timeSlot/<tid>/users', methods=['GET'])
+def time_slot_users(tid):
+    req = rest_utils.RESTContext(request)
+    if req.method == "GET":
+        res = AvailabilityResource.get_by_template({"timeId": tid})
+        rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
     return rsp
 
 
@@ -139,26 +187,13 @@ def availability_id(aid):
     req = rest_utils.RESTContext(request)
     if req.method == "GET":
         res = AvailabilityResource.get_by_template({"Id": aid})
-        if len(res):
-            status_code = 200
-        else:
-            res = 'Resource not found!'
-            status_code = 404
-        rsp = Response(json.dumps(res, default=str), status=status_code, content_type="application/json")
+        rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
     elif req.method == "PUT":
-        if req.data:
-            AvailabilityResource.update(req.data, aid)
-            status_code = 200
-            res = "Updated"
-        else:
-            res = 'New availability cannot be empty!'
-            status_code = 400
-        rsp = Response(f"{status_code} - {res}", status=status_code, content_type="text/plain")
+        AvailabilityResource.update(req.data, aid)
+        rsp = Response("UPDATED", status=200, content_type="text/plain")
     else:
         AvailabilityResource.delete_by_template({"Id": aid})
-        status_code = 204
-        res = "Deleted"
-        rsp = Response(f"{status_code} - {res}", status=status_code, content_type="text/plain")
+        rsp = Response("DELETED", status=200, content_type="text/plain")
     return rsp
 
 
@@ -167,26 +202,13 @@ def time_slot_id(tid):
     req = rest_utils.RESTContext(request)
     if req.method == "GET":
         res = TimeSlotResource.get_by_template({"Id": tid})
-        if len(res):
-            status_code = 200
-        else:
-            res = 'Resource not found!'
-            status_code = 404
-        rsp = Response(json.dumps(res, default=str), status=status_code, content_type="application/json")
+        rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
     elif req.method == "PUT":
-        if req.data:
-            TimeSlotResource.update(req.data, tid)
-            status_code = 200
-            res = "Updated"
-        else:
-            res = 'New timeslot cannot be empty!'
-            status_code = 400
-        rsp = Response(f"{status_code} - {res}", status=status_code, content_type="text/plain")
+        TimeSlotResource.update(req.data, tid)
+        rsp = Response("UPDATED", status=200, content_type="text/plain")
     else:
         TimeSlotResource.delete_by_template({"Id": tid})
-        status_code = 204
-        res = "Deleted"
-        rsp = Response(f"{status_code} - {res}", status=status_code, content_type="text/plain")
+        rsp = Response("DELETED", status=200, content_type="text/plain")
     return rsp
 
 
