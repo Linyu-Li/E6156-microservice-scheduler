@@ -43,7 +43,7 @@ def all_availability():
         else:
             res = 'New profile cannot be empty!'
             status_code = 400
-        rsp = Response(res, status=status_code, content_type="text/plain")
+        rsp = Response(f"{status_code} - {res}", status=status_code, content_type="text/plain")
     return rsp
 
 
@@ -70,7 +70,7 @@ def all_time_slot():
         else:
             res = 'New profile cannot be empty!'
             status_code = 400
-        rsp = Response(res, status=status_code, content_type="text/plain")
+        rsp = Response(f"{status_code} - {res}", status=status_code, content_type="text/plain")
     return rsp
 
 
@@ -93,11 +93,12 @@ def availability_id(aid):
         else:
             res = 'New availability cannot be empty!'
             status_code = 400
-        rsp = Response(res, status=status_code, content_type="text/plain")
+        rsp = Response(f"{status_code} - {res}", status=status_code, content_type="text/plain")
     else:
         AvailabilityResource.delete_by_template({"Id": aid})
         status_code = 204
-        rsp = Response("DELETED", status=status_code, content_type="text/plain")
+        res = "Deleted"
+        rsp = Response(f"{status_code} - {res}", status=status_code, content_type="text/plain")
     return rsp
 
 
@@ -120,11 +121,12 @@ def time_slot_id(tid):
         else:
             res = 'New timeslot cannot be empty!'
             status_code = 400
-        rsp = Response(res, status=status_code, content_type="text/plain")
+        rsp = Response(f"{status_code} - {res}", status=status_code, content_type="text/plain")
     else:
         TimeSlotResource.delete_by_template({"Id": tid})
         status_code = 204
-        rsp = Response("DELETED", status=status_code, content_type="text/plain")
+        res = "Deleted"
+        rsp = Response(f"{status_code} - {res}", status=status_code, content_type="text/plain")
     return rsp
 
 
