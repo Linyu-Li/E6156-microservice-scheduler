@@ -93,7 +93,7 @@ def all_availability():
 
 # modified the POST method. If a post request to add a new timeSlot is received, first need to check if it
 # exits in the database.
-@application.route('/timeSlot', methods=['GET', 'POST'])
+@application.route('/api/timeSlot', methods=['GET', 'POST'])
 def all_time_slot():
     req = rest_utils.RESTContext(request)
     temp = req.data
@@ -110,7 +110,7 @@ def all_time_slot():
 # add a new path
 # GET: display all available time slots for certain user
 # POST: add a new timeSlot for the certain user
-@application.route('/availability/users/<uid>', methods=['GET', 'POST'])
+@application.route('/api/availability/users/<uid>', methods=['GET', 'POST'])
 def availability_users(uid):
     req = rest_utils.RESTContext(request)
     if req.method == "GET":
@@ -148,7 +148,7 @@ def availability_users(uid):
 #      If exists, associate the time slot with the user.
 # DELETE: delete (the userID, timeID) pair in the Availability table. Do not delete the time slot in the TimeSlot table
 #         because other users might be associated with this time slot.
-@application.route('/availability/users/<uid>/<tid>', methods=['PUT', 'DELETE'])
+@application.route('/api/availability/users/<uid>/<tid>', methods=['PUT', 'DELETE'])
 def availability_users_one(uid, tid):
     req = rest_utils.RESTContext(request)
     if req.method == "PUT":
@@ -173,7 +173,7 @@ def availability_users_one(uid, tid):
 
 # add a new path
 # display all users for a certain time slot
-@application.route('/timeSlot/<tid>/users', methods=['GET'])
+@application.route('/api/timeSlot/<tid>/users', methods=['GET'])
 def time_slot_users(tid):
     req = rest_utils.RESTContext(request)
     if req.method == "GET":
@@ -182,7 +182,7 @@ def time_slot_users(tid):
     return rsp
 
 
-@application.route('/availability/<aid>', methods=['GET', 'PUT', 'DELETE'])
+@application.route('/api/availability/<aid>', methods=['GET', 'PUT', 'DELETE'])
 def availability_id(aid):
     req = rest_utils.RESTContext(request)
     if req.method == "GET":
@@ -197,7 +197,7 @@ def availability_id(aid):
     return rsp
 
 
-@application.route('/timeSlot/<tid>', methods=['GET', 'PUT', 'DELETE'])
+@application.route('/api/timeSlot/<tid>', methods=['GET', 'PUT', 'DELETE'])
 def time_slot_id(tid):
     req = rest_utils.RESTContext(request)
     if req.method == "GET":
@@ -212,7 +212,7 @@ def time_slot_id(tid):
     return rsp
 
 
-@application.route('/avail/<aid>', methods=['PUT'])
+@application.route('/api/avail/<aid>', methods=['PUT'])
 def edit_avail_time_slot(aid):
     if request.method != 'PUT':
         return Response("Wrong method", status=405, content_type="text/plain")
@@ -225,4 +225,4 @@ def edit_avail_time_slot(aid):
 
 
 if __name__ == '__main__':
-    application.run(port=5003)
+    application.run()
