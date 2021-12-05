@@ -7,8 +7,8 @@ class TimeSlotResource(BaseApplicationResource):
         super().__init__()
 
     @classmethod
-    def get_by_template(cls, template):
-        res = RDBService.find_by_template("schedule", "timeSlot", template)
+    def get_by_template(cls, template, limit=None, offset=None):
+        res = RDBService.find_by_template("schedule", "timeSlot", template, limit, offset)
         return res
 
     @classmethod

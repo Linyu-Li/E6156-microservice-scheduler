@@ -125,16 +125,31 @@ def availability_users(uid):
             res = temp
         rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
     elif req.method == "POST":
-        res = TimeSlotResource.get_by_template(req.data)
-        if not res:
-            TimeSlotResource.create(req.data)
-        time = TimeSlotResource.get_by_template(req.data)
-        timeId = time[0]["Id"]
+        startTime = int(req.data["StartTime"][:2])
+        endTime = int(req.data["EndTime"][:2])
+        interval = endTime-startTime
+        list = []
+        for i in range(interval):
+            list.append({
+                "Year": req.data["Year"],
+                "Month": req.data["Month"],
+                "Day": req.data["Day"],
+                "StartTime": str(startTime)+":00:00",
+                "EndTime": str(startTime+1)+":00:00"
+            })
+            startTime += 1
+        for i in range(len(list)):
+            res = TimeSlotResource.get_by_template(list[i])
 
-        AvailabilityResource.create({
-            "userId": uid,
-            "timeId": timeId
-        })
+            if not res:
+                TimeSlotResource.create(list[i])
+            time = TimeSlotResource.get_by_template(list[i])
+            timeId = time[0]["Id"]
+
+            AvailabilityResource.create({
+                "userId": uid,
+                "timeId": timeId
+            })
         rsp = Response("CREATED", status=201, content_type="text/plain")
     # else:
     #     AvailabilityResource.delete_by_template({"Id": aid})
@@ -178,6 +193,26 @@ def time_slot_users(tid):
     req = rest_utils.RESTContext(request)
     if req.method == "GET":
         res = AvailabilityResource.get_by_template({"timeId": tid})
+        rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
+    return rsp
+
+
+# add a new path
+# to display all available time slot time slots for a matched user
+@application.route('/api/matchAvail', methods=['GET'])
+def match_time_slots():
+    req = rest_utils.RESTContext(request)
+    uid = req.args["uid"]
+    if req.method == "GET":
+        res = AvailabilityResource.get_by_template({"userId": uid}, req.limit, req.offset)
+        if res:
+            temp = []
+            for r in res:
+                tid = r["timeId"]
+                timeSlot = TimeSlotResource.get_by_template({"Id": tid})
+                if timeSlot:
+                    temp = temp + timeSlot
+            res = temp
         rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
     return rsp
 

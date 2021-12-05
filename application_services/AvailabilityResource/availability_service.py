@@ -7,8 +7,8 @@ class AvailabilityResource(BaseApplicationResource):
         super().__init__()
 
     @classmethod
-    def get_by_template(cls, template):
-        res = RDBService.find_by_template("schedule", "availability", template)
+    def get_by_template(cls, template, limit=None, offset=None):
+        res = RDBService.find_by_template("schedule", "availability", template, limit, offset)
         res_with_links = AvailabilityResource.get_links(res)
         return res_with_links
 

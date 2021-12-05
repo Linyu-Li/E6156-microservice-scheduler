@@ -48,6 +48,8 @@ class RDBService:
         terms = []
         args = []
         clause = None
+        limit = 0;
+        offset = 0;
 
         if template is None or template == {}:
             clause = ""
@@ -80,14 +82,17 @@ class RDBService:
         return clause, args
 
     @classmethod
-    def find_by_template(cls, db_schema, table_name, template):
+    def find_by_template(cls, db_schema, table_name, template, limit=None, offset=None):
         print("getting database connection")
         wc, args = RDBService._get_where_clause_args(template)
 
         conn = RDBService._get_db_connection()
         cur = conn.cursor()
 
-        sql = "select * from " + db_schema + "." + table_name + " " + wc
+        if not limit and not offset:
+            sql = "select * from " + db_schema + "." + table_name + " " + wc
+        else:
+            sql = "select * from " + db_schema + "." + table_name + " " + wc + "limit "+limit + " offset "+offset
         res = cur.execute(sql, args=args)
         res = cur.fetchall()
 
