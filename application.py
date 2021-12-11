@@ -125,7 +125,8 @@ def availability_users(uid):
                 timeSlot = TimeSlotResource.get_by_template({"Id": tid})
                 if timeSlot:
                     temp = temp + timeSlot
-            res = temp
+            # TODO in the future, this is better done with SQL instead
+            res = sorted(temp, key=lambda t: (t['Year'], t['Month'], t['Day'], t['StartTime']))
         rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
     elif req.method == "POST":
         startTime = int(req.data["StartTime"][:2])
