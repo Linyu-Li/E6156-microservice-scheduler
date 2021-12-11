@@ -16,3 +16,6 @@ create table if not exists schedule.availability
 	userId int not null,
 	timeId int not null
 );
+
+create unique index timeSlot_Year_Month_Day_StartTime_EndTime_uindex
+   on schedule.timeSlot (Year, Month, Day, StartTime, EndTime);
