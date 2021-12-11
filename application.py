@@ -10,6 +10,8 @@ from flask_dance.contrib.google import make_google_blueprint, google
 from application_services.AvailabilityResource.availability_service import AvailabilityResource
 from application_services.TimeSlotResource.time_slot_service import TimeSlotResource
 from middleware import security, notification
+import random
+
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger()
@@ -22,17 +24,17 @@ client_id = "1093327178993-kbj68ghvsopafunmdk8rt1r6upt0oqdo.apps.googleuserconte
 client_secret = "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"
 application.secret_key = "supersekrit"
 
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
-blueprint = make_google_blueprint(
-    client_id=client_id,
-    client_secret=client_secret,
-    reprompt_consent=True,
-    scope=["profile", "email"]
-)
-application.register_blueprint(blueprint, url_prefix="/login")
-google_blueprint = application.blueprints.get("google")
-
+# os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+# os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
+# blueprint = make_google_blueprint(
+#     client_id=client_id,
+#     client_secret=client_secret,
+#     reprompt_consent=True,
+#     scope=["profile", "email"]
+# )
+# application.register_blueprint(blueprint, url_prefix="/login")
+# google_blueprint = application.blueprints.get("google")
+#
 # @application.before_request
 # def before_request():
 #     print("checking before request")
@@ -107,6 +109,7 @@ def all_time_slot():
         rsp = Response("CREATED", status=201, content_type="text/plain")
     return rsp
 
+
 # add a new path
 # GET: display all available time slots for certain user
 # POST: add a new timeSlot for the certain user
@@ -127,15 +130,15 @@ def availability_users(uid):
     elif req.method == "POST":
         startTime = int(req.data["StartTime"][:2])
         endTime = int(req.data["EndTime"][:2])
-        interval = endTime-startTime
+        interval = endTime - startTime
         list = []
         for i in range(interval):
             list.append({
                 "Year": req.data["Year"],
                 "Month": req.data["Month"],
                 "Day": req.data["Day"],
-                "StartTime": str(startTime)+":00:00",
-                "EndTime": str(startTime+1)+":00:00"
+                "StartTime": str(startTime) + ":00:00",
+                "EndTime": str(startTime + 1) + ":00:00"
             })
             startTime += 1
         for i in range(len(list)):
@@ -168,7 +171,6 @@ def availability_users_one(uid, tid):
     req = rest_utils.RESTContext(request)
     if req.method == "PUT":
         AvailabilityResource.delete_by_template({"userId": uid, "timeId": tid})
-        temp = req.data
 
         res = TimeSlotResource.get_by_template(req.data)
         if not res:
@@ -184,7 +186,9 @@ def availability_users_one(uid, tid):
     elif req.method == "DELETE":
         AvailabilityResource.delete_by_template({"userId": uid, "timeId": tid})
         rsp = Response("DELETED", status=200, content_type="text/plain")
+
     return rsp
+
 
 # add a new path
 # display all users for a certain time slot
@@ -213,6 +217,25 @@ def match_time_slots():
                 if timeSlot:
                     temp = temp + timeSlot
             res = temp
+        rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
+    return rsp
+
+
+@application.route('/api/matchUser/<uid>', methods=['GET'])
+def match(uid):
+    req = rest_utils.RESTContext(request)
+    if req.method == "GET":
+        all_matches = []
+        all_avail_time = json.loads(availability_users(uid).data.decode("utf-8"))
+        for t in all_avail_time:
+            tid = t["Id"]
+            users = AvailabilityResource.get_by_template({"timeId": tid})
+            for user in users:
+                if user["userId"] == int(uid):
+                    continue
+                all_matches.append(user["userId"])
+        res = random.choice(all_matches)
+
         rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
     return rsp
 
@@ -260,4 +283,4 @@ def edit_avail_time_slot(aid):
 
 
 if __name__ == '__main__':
-    application.run(host="0.0.0.0", port=5003)
+    application.run()
