@@ -171,17 +171,35 @@ def availability_users_one(uid, tid):
     req = rest_utils.RESTContext(request)
     if req.method == "PUT":
         AvailabilityResource.delete_by_template({"userId": uid, "timeId": tid})
+        startTime = int(req.data["StartTime"][:2])
+        endTime = int(req.data["EndTime"][:2])
+        interval = endTime - startTime
+        list = []
+        for i in range(interval):
+            list.append({
+                "Year": req.data["Year"],
+                "Month": req.data["Month"],
+                "Day": req.data["Day"],
+                "StartTime": str(startTime) + ":00:00",
+                "EndTime": str(startTime + 1) + ":00:00"
+            })
+            startTime += 1
+        for i in range(len(list)):
+            res = TimeSlotResource.get_by_template(list[i])
 
-        res = TimeSlotResource.get_by_template(req.data)
-        if not res:
-            TimeSlotResource.create(req.data)
-        time = TimeSlotResource.get_by_template(req.data)
-        timeId = time[0]["Id"]
+            if not res:
+                TimeSlotResource.create(list[i])
+            time = TimeSlotResource.get_by_template(list[i])
+            timeId = time[0]["Id"]
 
-        AvailabilityResource.create({
-            "userId": uid,
-            "timeId": timeId
-        })
+            template = {
+                "userId": uid,
+                "timeId": timeId
+            }
+            output = AvailabilityResource.get_by_template(template)
+
+            if not output:
+                AvailabilityResource.create(template)
         rsp = Response("UPDATED", status=200, content_type="application/json")
     elif req.method == "DELETE":
         AvailabilityResource.delete_by_template({"userId": uid, "timeId": tid})
