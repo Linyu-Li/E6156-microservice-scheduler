@@ -276,7 +276,7 @@ def availability_id(aid):
     return rsp
 
 
-@application.route('/timeSlot/<tid>', methods=['GET', 'PUT', 'DELETE'])
+@application.route('/api/timeSlot/<tid>', methods=['GET', 'PUT', 'DELETE'])
 def time_slot_id(tid):
     req = rest_utils.RESTContext(request)
     if req.method == "GET":
