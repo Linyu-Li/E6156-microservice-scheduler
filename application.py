@@ -234,7 +234,10 @@ def match(uid):
                 if user["userId"] == int(uid):
                     continue
                 all_matches.append(user["userId"])
-        res = random.choice(all_matches)
+        if all_matches:
+            res = random.choice(all_matches)
+        else:
+            res = -1
 
         rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
     return rsp
